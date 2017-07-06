@@ -1,56 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="performance_timeline_emit.js"></script>
-<script src="styleupdate_timing.js"></script>
-<script src="frame_timing.js"></script>
-<script src="event_timing.js"></script>
-<script src="input_latency_monitor.js"></script>
-<script src="performance_observer_tracing.js"></script>
+<script src="custom-performance-entry/queue_entry.js"></script>
+<script src="hero_element_timing.js"></script>
 <script>
-window.addEventListener("load", function() {
-  document.addEventListener("click", function() {
-    let now = performance.now();
 
-    performance.mark("ClickAStart");
-    while (performance.now() < now + 500){}
-    performance.mark("ClickAEndBStart");
-    now = performance.now();
-    while (performance.now() < now + 500){}
-    performance.mark("ClickBEnd");
-    performance.measure("ClickA", "ClickAStart", "ClickAEndBStart");
-    performance.measure("ClickB", "ClickAEndBStart", "ClickBEnd");
-  });
+// Insert an element on a timer.
+/*window.setTimeout(() => {
+   const newNode = document.createElement('p');
+   newNode.textContent = 'Test';
+   newNode.id = 'b';
+   newNode.setAttribute('elementtiming', 'b');
 
-  document.addEventListener("mousemove", () => {});
-});
-
-function fetchResource() {
-  function dummy() {
-  }
-
-  var oReq = new XMLHttpRequest();
-  oReq.open('get', 'https://thecatapi.com/api/images/get?format=src&type=gif', true);
-  oReq.send();
-}
+   let a = document.getElementById('a');
+   a.parentNode.insertBefore(newNode, a.nextSibling);
+   }, 1000);*/
 
 </script>
-<style>
-#box {
-  width:50px;
-  height:50px;
-  background-color:blue;
-}
 
-#box:hover {
-  background-color:red;
-}
-
-</style>
 </head>
 <body>
-<div id="box" report-styleupdate></div>
-<div class="button"> <a href="#" onclick="fetchResource()">Fetch Resource</a> </div>
-<div class="button"> <a href="#" onclick="downloadTrace()">Download Trace</a> </div>
+
+<p elementtiming="a">Test</p>
+
+<script src="http://slowwly.robertomurray.co.uk/delay/3000/url/https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous">
+</script>
+
+<p elementtiming="b">Test</p>
+
+<script
+    src="http://slowwly.robertomurray.co.uk/delay/6000/url/https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+
+<p id="c">Test</p>
+<script>
+// Set the hero element attribute on a timer.
+window.setTimeout(() => {
+  let c = document.getElementById('c');
+  c.setAttribute('elementtiming', 'c');
+}, 1000);
+</script>
 </body>
 </html>
