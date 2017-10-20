@@ -8,22 +8,28 @@ let observer = new PerformanceObserver((entries) => {
     console.log(entry);
   }
 });
-observer.observe({entryTypes: ["heroelementtiming"], selector:"#a"});
+observer.observe({entryTypes: ['heroelementtiming'], selector:'#a'});
 
 observer = new PerformanceObserver((entries) => {
   for (const entry of entries.getEntries()) {
     console.log(entry);
   }
 });
-observer.observe({entryTypes: ["heroelementtiming"], selector:"#b"});
+observer.observe({entryTypes: ['heroelementtiming'], selector:'#b'});
 
 observer = new PerformanceObserver((entries) => {
   for (const entry of entries.getEntries()) {
     console.log(entry);
   }
 });
-observer.observe({entryTypes: ["heroelementtiming"], selector:"#c, #d"});
+observer.observe({entryTypes: ['heroelementtiming'], selector:'#c, #d'});
 
+observer = new PerformanceObserver((entries) => {
+  for (const entry of entries.getEntries()) {
+    console.log(entry);
+  }
+});
+observer.observe({entryTypes: ['heroelementtiming'], selector:'[foo="a"]'});
 
 </script>
 <style>
@@ -48,14 +54,16 @@ observer.observe({entryTypes: ["heroelementtiming"], selector:"#c, #d"});
 
 <p id="c">Test</p>
 
+<p id="e">Test</p>
+
 <p id="d">Test</p>
 
 <script>
 
 
 window.setTimeout(() => {
-  let c = document.getElementById('c');
-  c.setAttribute('foo', 'a');
+  let e = document.getElementById('e');
+  e.setAttribute('foo', 'a');
 }, 1000);
 </script>
 </body>

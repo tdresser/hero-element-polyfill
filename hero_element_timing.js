@@ -46,6 +46,8 @@
     performanceEntry.data = data;
 
     for (const observer of customObservers) {
+      if (observer.selector != selector)
+        continue;
       const listener = observerListeners.get(observer);
       const list = {};
       list.prototype = PerformanceObserverEntryList;
@@ -66,19 +68,22 @@
     var observer = new IntersectionObserver((entries, observer) => {
       // TODO - should we try to reuse observers?
       let earliestTime = Infinity;
+      let target = null;
       entries.forEach(entry => {
         if (entry.intersectionRatio < 1)
           return;
         console.log(entries);
         earliestTime = Math.min(earliestTime, entry.time);
+        target = entry.target;
       });
 
       if (earliestTime === Infinity)
         return;
 
-      if (observer.selector != selector)
+      if (selector != target.firstObservingSelector)
         return;
 
+      console.log("QUEUEENTRY");
       queueHeroElementTimingEntry(selector, earliestTime, 0);
       observer.disconnect();
     }, config);
@@ -91,10 +96,9 @@
       if (observer.selector) {
         let matchingElements = document.querySelectorAll(observer.selector);
         matchingElements.forEach(matchingElement => {
-          if (matchingElement.alreadyObserved)
+          if (matchingElement.firstObservingSelector)
             return;
-          matchingElement.alreadyObserved = true;
-          console.log("OBSERVING " + observer.selector);
+          matchingElement.firstObservingSelector = observer.selector;
           observeForIntersection(matchingElement, observer.selector);
         });
       }
