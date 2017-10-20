@@ -1,7 +1,64 @@
 (function () {
   'use strict';
+  // Contains all performance observers listenening to custom entries.
+  const customObservers = new Set();
+  // Map from EVERY performance observer to its listener.
+  const observerListeners = new WeakMap();
 
-  function observeForIntersection(node, name) {
+  const originalObserve = PerformanceObserver.prototype.observe;
+
+  // TODO - what if we observe multiple times?
+  // TODO - implement disconnect.
+  PerformanceObserver.prototype.observe = function(args) {
+    let nonCustomTypes = [];
+    for (const type of args.entryTypes) {
+      if (type == "heroelementtiming") {
+        customObservers.add(this);
+        // TODO - don't expose this.
+        this.selector = args.selector;
+        console.log(this.selector);
+      } else {
+        nonCustomTypes.push(type);
+      }
+    }
+
+    if (nonCustomTypes.length > 0) {
+      args.entryTypes = nonCustomTypes;
+      originalObserve.call(this, args);
+    }
+  }
+
+  const originalProto = PerformanceObserver.prototype;
+  PerformanceObserver = function(listener) {
+    const result = new originalProto.constructor(listener);
+    observerListeners.set(result, listener);
+    return result;
+  }
+  PerformanceObserver.prototype = originalProto;
+
+  function queueHeroElementTimingEntry(selector, startTime, duration, data) {
+    const performanceEntry = {};
+    performanceEntry.prototype = PerformanceEntry;
+    performanceEntry.entryType = "heroelementtiming";
+    performanceEntry.name = selector;
+    performanceEntry.startTime = startTime;
+    performanceEntry.duration = duration;
+    performanceEntry.data = data;
+
+    for (const observer of customObservers) {
+      const listener = observerListeners.get(observer);
+      const list = {};
+      list.prototype = PerformanceObserverEntryList;
+      // TODO - override other methods.
+      list.getEntries = function() {
+        return [performanceEntry];
+      }
+
+      listener.call(this, list);
+    };
+  }
+
+  function observeForIntersection(node, selector) {
     const config = {
       threshold: 1.0
     }
@@ -15,36 +72,35 @@
         console.log(entries);
         earliestTime = Math.min(earliestTime, entry.time);
       });
+
       if (earliestTime === Infinity)
         return;
 
-      performance.queueEntry('hero-element-timing', earliestTime, 0, {name});
+      if (observer.selector != selector)
+        return;
+
+      queueHeroElementTimingEntry(selector, earliestTime, 0);
       observer.disconnect();
     }, config);
     observer.observe(node)
   }
 
   const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach(node => {
-        if (!node.attributes)
-          return;
-        const nameAttr = node.attributes.getNamedItem('elementtiming');
-        if (!nameAttr)
-          return;
-        const name = nameAttr.value;
-        if (!name)
-          return;
-        observeForIntersection(node, name);
-      });
-
-      if(mutation.type == 'attributes') {
-        // TODO - check what happens if you remove an attribute.
-        observeForIntersection(mutation.target, mutation.target.getAttribute('elementTiming'));
+    // TODO - be more clever about when to re-execute selectors.
+    customObservers.forEach(observer => {
+      if (observer.selector) {
+        let matchingElements = document.querySelectorAll(observer.selector);
+        matchingElements.forEach(matchingElement => {
+          if (matchingElement.alreadyObserved)
+            return;
+          matchingElement.alreadyObserved = true;
+          console.log("OBSERVING " + observer.selector);
+          observeForIntersection(matchingElement, observer.selector);
+        });
       }
     });
   });
 
-  const config = { attributes: true, childList: true, subtree:true, attributeFilter: ['elementtiming']};
+  const config = {attributes: true, childList: true, subtree:true};
   observer.observe(document.documentElement, config);
 })();

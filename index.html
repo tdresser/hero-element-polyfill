@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="custom-performance-entry/queue_entry.js"></script>
 <script src="hero_element_timing.js"></script>
 <script>
 let observer = new PerformanceObserver((entries) => {
@@ -9,7 +8,14 @@ let observer = new PerformanceObserver((entries) => {
     console.log(entry);
   }
 });
-observer.observe({entryTypes: ["custom"]});
+observer.observe({entryTypes: ["heroelementtiming"], selector:"#a"});
+
+observer = new PerformanceObserver((entries) => {
+  for (const entry of entries.getEntries()) {
+    console.log(entry);
+  }
+});
+observer.observe({entryTypes: ["heroelementtiming"], selector:"#b"});
 
 </script>
 <style>
@@ -22,25 +28,26 @@ observer.observe({entryTypes: ["custom"]});
 
 <p onload="console.log('onloadery')"></p>
 
-<p elementtiming="a">Test</p>
+<p id="a">Test</p>
 
 <script src="http://slowwly.robertomurray.co.uk/delay/500/url/https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous">
 </script>
 
-<p elementtiming="b">Test</p>
+<p id="b">Test</p>
 
 <script
     src="http://slowwly.robertomurray.co.uk/delay/1000/url/https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
 
 <p id="c">Test</p>
 
-<p elementtiming="d" id="d">Test</p>
+<p id="d">Test</p>
 
 <script>
-// Set the hero element attribute on a timer.
+
+
 window.setTimeout(() => {
   let c = document.getElementById('c');
-  c.setAttribute('elementtiming', 'c');
+  c.setAttribute('foo', 'a');
 }, 1000);
 </script>
 </body>
