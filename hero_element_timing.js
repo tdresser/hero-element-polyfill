@@ -1,34 +1,50 @@
 (function () {
   'use strict';
-  const heroElements = new WeakSet();
-  const elementPreviousStyleStrings = new WeakMap();
-  const pendingDisplayedHeroElements = [];
 
-  function updateHeroElements(now) {
-    window.requestAnimationFrame(updateHeroElements);
-
-    while (pendingDisplayedHeroElements.length > 0) {
-      const displayedElement = pendingDisplayedHeroElements.pop();
-      console.log("DISPLAYED");
-      console.log(displayedElement);
+  function observeForIntersection(node, name) {
+    const config = {
+      threshold: 1.0
     }
 
-    for (let element of document.querySelectorAll('*')) {
-      const name = element.getAttribute('elementtiming');
-      if (!name)
-        continue;
-      if (heroElements.has(element))
-        continue;
+    var observer = new IntersectionObserver((entries, observer) => {
+      // TODO - should we try to reuse observers?
+      let earliestTime = Infinity;
+      entries.forEach(entry => {
+        if (entry.intersectionRatio < 1)
+          return;
+        console.log(entries);
+        earliestTime = Math.min(earliestTime, entry.time);
+      });
+      if (earliestTime === Infinity)
+        return;
 
-      heroElements.add(element);
-
-      const scriptNode = document.createElement('script');
-      scriptNode.onload = () => {
-        pendingDisplayedHeroElements.push(element);
-      };
-      scriptNode.src = "data:text/javascript;,";
-      element.parentNode.insertBefore(scriptNode, element.nextSibling);
-    }
+      performance.queueEntry('hero-element-timing', earliestTime, 0, {name});
+      observer.disconnect();
+    }, config);
+    observer.observe(node)
   }
-  window.requestAnimationFrame(updateHeroElements);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach(node => {
+        if (!node.attributes)
+          return;
+        const nameAttr = node.attributes.getNamedItem('elementtiming');
+        if (!nameAttr)
+          return;
+        const name = nameAttr.value;
+        if (!name)
+          return;
+        observeForIntersection(node, name);
+      });
+
+      if(mutation.type == 'attributes') {
+        // TODO - check what happens if you remove an attribute.
+        observeForIntersection(mutation.target, mutation.target.getAttribute('elementTiming'));
+      }
+    });
+  });
+
+  const config = { attributes: true, childList: true, subtree:true, attributeFilter: ['elementtiming']};
+  observer.observe(document.documentElement, config);
 })();
