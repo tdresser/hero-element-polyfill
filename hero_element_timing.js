@@ -1,6 +1,54 @@
 (function () {
   'use strict';
-  // Contains all performance observers listenening to custom entries.
+
+  function observeForIntersection(node, selector) {
+    const config = {
+      threshold: 1.0
+    }
+
+    var observer = new IntersectionObserver((entries, observer) => {
+      // TODO - should we try to reuse observers?
+      let earliestTime = Infinity;
+      let target = null;
+      entries.forEach(entry => {
+        if (entry.intersectionRatio < 1)
+          return;
+        earliestTime = Math.min(earliestTime, entry.time);
+        target = entry.target;
+      });
+
+      if (earliestTime === Infinity)
+        return;
+
+      queueHeroElementTimingEntry(selector, earliestTime, 0);
+      observer.disconnect();
+    }, config);
+    observer.observe(node)
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    // TODO - be more clever about when to re-execute selectors.
+    customObservers.forEach(observer => {
+      if (observer.selector) {
+        let matchingElements = document.querySelectorAll(observer.selector);
+        matchingElements.forEach(matchingElement => {
+          if (matchingElement.alreadyObserved)
+            return;
+          matchingElement.alreadyObserved = true;
+          observeForIntersection(matchingElement, observer.selector);
+        });
+      }
+    });
+  });
+
+  const config = {attributes: true, childList: true, subtree:true};
+  observer.observe(document.documentElement, config);
+
+  // Custom Performance Entry polyfill.
+  // This is a fork of https://github.com/tdresser/custom-performance-entry, as
+  // it needs a bit of special logic to handle filtering by selector.
+
+  // Contains all performance observers listening to custom entries.
   const customObservers = new Set();
   // Map from EVERY performance observer to its listener.
   const observerListeners = new WeakMap();
@@ -16,7 +64,6 @@
         customObservers.add(this);
         // TODO - don't expose this.
         this.selector = args.selector;
-        console.log(this.selector);
       } else {
         nonCustomTypes.push(type);
       }
@@ -59,52 +106,4 @@
       listener.call(this, list);
     };
   }
-
-  function observeForIntersection(node, selector) {
-    const config = {
-      threshold: 1.0
-    }
-
-    var observer = new IntersectionObserver((entries, observer) => {
-      // TODO - should we try to reuse observers?
-      let earliestTime = Infinity;
-      let target = null;
-      entries.forEach(entry => {
-        if (entry.intersectionRatio < 1)
-          return;
-        console.log(entries);
-        earliestTime = Math.min(earliestTime, entry.time);
-        target = entry.target;
-      });
-
-      if (earliestTime === Infinity)
-        return;
-
-      if (selector != target.firstObservingSelector)
-        return;
-
-      console.log("QUEUEENTRY");
-      queueHeroElementTimingEntry(selector, earliestTime, 0);
-      observer.disconnect();
-    }, config);
-    observer.observe(node)
-  }
-
-  const observer = new MutationObserver((mutations) => {
-    // TODO - be more clever about when to re-execute selectors.
-    customObservers.forEach(observer => {
-      if (observer.selector) {
-        let matchingElements = document.querySelectorAll(observer.selector);
-        matchingElements.forEach(matchingElement => {
-          if (matchingElement.firstObservingSelector)
-            return;
-          matchingElement.firstObservingSelector = observer.selector;
-          observeForIntersection(matchingElement, observer.selector);
-        });
-      }
-    });
-  });
-
-  const config = {attributes: true, childList: true, subtree:true};
-  observer.observe(document.documentElement, config);
 })();
