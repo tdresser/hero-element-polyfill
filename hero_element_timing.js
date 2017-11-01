@@ -42,7 +42,7 @@
     });
   });
 
-  const config = {attributes: true, childList: true, subtree:true};
+  const config = {attributes: true, childList: true, subtree: true};
   observer.observe(document.documentElement, config);
 
   // Custom Performance Entry polyfill.
