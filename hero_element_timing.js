@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  const surfacedNotInViewport = new WeakSet();
+
   function observeForIntersection(node, selector) {
     const config = {
       threshold: 1.0
@@ -10,17 +12,16 @@
       // TODO - should we try to reuse observers?
       let earliestTime = Infinity;
       let target = null;
-      entries.forEach(entry => {
-        if (entry.intersectionRatio < 1)
-          return;
-        earliestTime = Math.min(earliestTime, entry.time);
-        target = entry.target;
-      });
+      console.assert(entries.length == 1);
+      const entry = entries[0];
 
-      if (earliestTime === Infinity)
+      if (entry.intersectionRatio < 1) {
+        surfacedNotInViewport.add(entry.target);
         return;
-
-      queueHeroElementTimingEntry(selector, earliestTime, 0);
+      }
+      queueHeroElementTimingEntry(selector, entry.time, 0, {
+        scrolledIntoView: surfacedNotInViewport.has(entry.target)
+      });
       observer.disconnect();
     }, config);
     observer.observe(node)
